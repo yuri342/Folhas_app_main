@@ -1,0 +1,19 @@
+[2025-12-08T08:58:58.327446] Procurando TOKEN em: C:\Users\BERTOLADESOUZAYURI\OneDrive - TK Elevator\Desktop\Folhas Pagamento\src\code\tokens\excutable\dist\tokens\tokens.json
+[2025-12-08T08:58:58.330231] Token válido por mais 6 dias.
+[2025-12-08T09:00:30.249040] Procurando TOKEN em: C:\Users\BERTOLADESOUZAYURI\OneDrive - TK Elevator\Desktop\Folhas Pagamento\src\code\tokens\excutable\dist\tokens\tokens.json
+[2025-12-08T09:00:30.261953] Token válido por mais 5 dias.
+[2025-12-08T09:00:57.687787] Procurando TOKEN em: C:\Users\BERTOLADESOUZAYURI\OneDrive - TK Elevator\Desktop\Folhas Pagamento\src\code\tokens\excutable\dist\tokens\tokens.json
+[2025-12-08T09:00:57.703354] Token próximo da expiração (dias restantes: 4). Renovando automaticamente...
+[2025-12-08T09:00:58.876762] Token renovado com sucesso!
+[2025-12-08T09:01:23.495174] Procurando TOKEN em: C:\Users\BERTOLADESOUZAYURI\OneDrive - TK Elevator\Desktop\Folhas Pagamento\src\code\tokens\excutable\dist\tokens\tokens.json
+[2025-12-08T09:01:23.509014] Token próximo da expiração (dias restantes: 4). Renovando automaticamente...
+[2025-12-08T09:01:24.659411] Token renovado com sucesso!
+[2025-12-08T09:36:41.681511] Procurando TOKEN em: C:\Users\BERTOLADESOUZAYURI\OneDrive - TK Elevator\Desktop\Folhas Pagamento\src\code\MainCode\tokens\excutable\dist\tokens\tokens.json
+[2025-12-08T09:36:41.696263] Token válido por mais 6 dias.
+[2025-12-09T08:52:25.937873] Procurando TOKEN em: C:\Users\BERTOLADESOUZAYURI\OneDrive - TK Elevator\Desktop\Folhas Pagamento\src\code\MainCode\src\tokens\excutable\dist\tokens\tokens.json
+[2025-12-09T08:52:25.941849] Token próximo da expiração (dias restantes: 2). Renovando automaticamente...
+[2025-12-09T08:52:26.637852] Token renovado com sucesso!
+[2025-12-10T07:53:47.918231] Procurando TOKEN em: C:\Users\BERTOLADESOUZAYURI\OneDrive - TK Elevator\Desktop\Folhas Pagamento\src\code\MainCode\src\tokens\excutable\dist\tokens\tokens.json
+[2025-12-10T07:53:47.950235] Token válido por mais 6 dias.
+[2025-12-11T07:52:58.908369] Procurando TOKEN em: C:\Users\BERTOLADESOUZAYURI\OneDrive - TK Elevator\Desktop\Folhas Pagamento\src\code\MainCode\src\tokens\excutable\dist\tokens\tokens.json
+[2025-12-11T07:52:58.925609] Token válido por mais 5 dias.
