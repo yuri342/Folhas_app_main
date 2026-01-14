@@ -17,3 +17,23 @@
 [2025-12-10T07:53:47.950235] Token válido por mais 6 dias.
 [2025-12-11T07:52:58.908369] Procurando TOKEN em: C:\Users\BERTOLADESOUZAYURI\OneDrive - TK Elevator\Desktop\Folhas Pagamento\src\code\MainCode\src\tokens\excutable\dist\tokens\tokens.json
 [2025-12-11T07:52:58.925609] Token válido por mais 5 dias.
+[2025-12-16T08:53:29.562990] Procurando TOKEN em: C:\Users\BERTOLADESOUZAYURI\OneDrive - TK Elevator\Desktop\Folhas Pagamento\src\code\MainCode\srcCods\UI\tokens\excutable\dist\tokens\tokens.json
+[2025-12-16T08:53:29.565907] Token inválido: Token expirado.
+[2025-12-16T08:53:29.567750] Abrindo interface para captura/ajuste de token...
+[2025-12-16T08:54:17.757621] Procurando TOKEN em: C:\Users\BERTOLADESOUZAYURI\OneDrive - TK Elevator\Desktop\Folhas Pagamento\src\code\MainCode\srcCods\UI\tokens\excutable\dist\tokens\tokens.json
+[2025-12-16T08:54:17.760247] Token válido por mais 6 dias.
+[2025-12-22T10:56:42.150243] Procurando TOKEN em: C:\Users\BERTOLADESOUZAYURI\OneDrive - TK Elevator\Desktop\Folhas_Pagamento_1.1\Folhas Pagamento\src\code\MainCode\srcCods\UI\tokens\excutable\dist\tokens\tokens.json
+[2025-12-22T10:56:42.153097] Token próximo da expiração (dias restantes: 0). Renovando automaticamente...
+[2025-12-22T10:56:42.824829] Token renovado com sucesso!
+[2026-01-06T08:24:33.933361] Procurando TOKEN em: C:\Users\BERTOLADESOUZAYURI\OneDrive - TK Elevator\Desktop\Folhas_Pagamento_1.2\Folhas Pagamento\src\code\MainCode\srcCods\UI\tokens\excutable\dist\tokens\tokens.json
+[2026-01-06T08:24:33.936882] Token inválido: Token expirado.
+[2026-01-06T08:24:33.938443] Abrindo interface para captura/ajuste de token...
+[2026-01-06T08:24:55.439633] Procurando TOKEN em: C:\Users\BERTOLADESOUZAYURI\OneDrive - TK Elevator\Desktop\Folhas_Pagamento_1.2\Folhas Pagamento\src\code\MainCode\srcCods\UI\tokens\excutable\dist\tokens\tokens.json
+[2026-01-06T08:24:55.442984] Token válido por mais 6 dias.
+[2026-01-13T09:57:04.616122] Procurando TOKEN em: C:\Users\BERTOLADESOUZAYURI\OneDrive - TK Elevator\Desktop\Folhas_Pagamento_1.3.1_vf\Folhas Pagamento\src\code\MainCode\srcCods\UI\tokens\excutable\dist\tokens\tokens.json
+[2026-01-13T09:57:04.619423] Token inválido: Token expirado.
+[2026-01-13T09:57:04.620883] Abrindo interface para captura/ajuste de token...
+[2026-01-13T09:57:14.352776] Procurando TOKEN em: C:\Users\BERTOLADESOUZAYURI\OneDrive - TK Elevator\Desktop\Folhas_Pagamento_1.3.1_vf\Folhas Pagamento\src\code\MainCode\srcCods\UI\tokens\excutable\dist\tokens\tokens.json
+[2026-01-13T09:57:14.356061] Token válido por mais 6 dias.
+[2026-01-14T08:01:31.046572] Procurando TOKEN em: C:\Users\BERTOLADESOUZAYURI\OneDrive - TK Elevator\Desktop\Folhas_Pagamento_1.3.1_vf\Folhas Pagamento\src\code\MainCode\srcCods\UI\tokens\excutable\dist\tokens\tokens.json
+[2026-01-14T08:01:31.064720] Token válido por mais 6 dias.

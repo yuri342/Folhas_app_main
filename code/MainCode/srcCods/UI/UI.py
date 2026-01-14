@@ -9,7 +9,7 @@ import pathlib as pl
 
 # === Ajuste de caminhos (funciona dentro do .exe também) ===
 # Import correto
-import funcs   # AGORA FUNCIONA
+import funcs # AGORA FUNCIONA
 
 
 
@@ -87,7 +87,9 @@ class AppMain(ctk.CTk):
         self.TabelasNomes = [item["names"] for item in self.TabelasOpts]
         self.Tabelasids = [item["ids"] for item in self.TabelasOpts]
         self.mapa_nome_id = {item["names"]: item["ids"] for item in self.TabelasOpts}
+        self.revisions = ["Nenhuma Tabela Selecionada"]
 
+        self.revision_id = None
         self.path_output = ctk.StringVar()
         self.nome_tabela = ctk.StringVar()
         self.nome_aba = ctk.StringVar()
@@ -95,7 +97,7 @@ class AppMain(ctk.CTk):
         self.tabela_id = None  # evitar crash
 
         # ---------------- UI -----------------
-        titulo = ctk.CTkLabel(self, text="📊 Folhas Excel Generator",
+        titulo = ctk.CTkLabel(self, text="📊 Gerador Relatório Tabela Excel",
                               font=ctk.CTkFont(size=22, weight="bold"))
         titulo.pack(pady=(10, 0))
 
@@ -136,6 +138,14 @@ class AppMain(ctk.CTk):
         self.dropdown = ctk.CTkComboBox(linha4, values=self.TabelasNomes, command=self.on_select)
         self.dropdown.pack(side="left", expand=True, fill="x", padx=10)
 
+        # Dropdown Senior
+
+        linha41 = ctk.CTkFrame(inputs_frame)
+        linha41.pack(fill="x", pady=3)
+        ctk.CTkLabel(linha41, text="Vigência:").pack(side="left", padx=10)
+        self.dropdown2 = ctk.CTkComboBox(linha41, values=self.revisions, command=self.on_select_revision)
+        self.dropdown2.pack(side="left", expand=True, fill="x", padx=10)
+
        # Linha 5 – botões lado a lado
         linha5 = ctk.CTkFrame(inputs_frame)
         linha5.pack(fill="x", pady=8)
@@ -167,6 +177,26 @@ class AppMain(ctk.CTk):
         )
         btn3.pack(side="left", expand=True, fill="x", padx=5)
 
+
+        btn4 = ctk.CTkButton(
+                linha5,
+                text="Gerar Todas as vigências (abas) 🚀",
+                fg_color="#42008D",
+                height=40,
+                command=lambda: self.criarTodasAsVigenciasPorAba()
+        )
+        btn4.pack(side="left", expand=True, fill="x", padx=5)
+
+        btn5 = ctk.CTkButton(
+                linha5,
+                text="Gerar Todas SP 🚀",
+                fg_color="#117CE0",
+                height=40,
+                command=lambda: funcs.gerar_tabela_SP_engessada(CaminhoPasta=self.path_output.get(), tabela_id="74070F901FE74A358F8B1740EDF60F06")
+        )
+        btn5.pack(side="left", expand=True, fill="x", padx=5)
+
+
         # Log
         self.logbox = ctk.CTkTextbox(self, height=300)
         self.logbox.pack(fill="both", expand=True, padx=20, pady=10)
@@ -180,7 +210,21 @@ class AppMain(ctk.CTk):
 
     def on_select(self, nome):
         self.tabela_id = self.mapa_nome_id[nome]
+        #pegar Revisions
+        self.revisions = []
+        self.revisions = funcs.pegarTabelaRevisions(token=self.token, tabela_id=self.tabela_id)
+        start_dates = [r["startDate"] for r in self.revisions]
+        self.dropdown2.configure(values=start_dates)
+        self.dropdown2.set("Selecione a Vigência")
         print(f"Selecionado → {nome} | ID = {self.tabela_id}")
+
+    def on_select_revision(self, start_date):
+        selected_revision = next((r for r in self.revisions if r["startDate"] == start_date), None)
+        if selected_revision:
+            self.revision_id = selected_revision["id"]
+            print(f"Revisão selecionada → Data Início: {start_date} | ID da Revisão: {self.revision_id}")
+        else:
+            print("Revisão não encontrada.")
 
     def select_folder(self):
         pasta = filedialog.askdirectory()
@@ -188,7 +232,7 @@ class AppMain(ctk.CTk):
             self.path_output.set(pasta)
             print("📁 Pasta selecionada:", pasta)
 
-    def validar_inputs(self):
+    def validar_inputs(self):  
         if not self.path_output.get():
             messagebox.showerror("Erro", "Selecione a pasta de saída.")
             return False
@@ -217,7 +261,9 @@ class AppMain(ctk.CTk):
                 nometabela=self.nome_tabela.get(),
                 CaminhoPasta=self.path_output.get(),
                 tabela_id=self.tabela_id,
-                aba=self.criar_aba.get()
+                aba=self.criar_aba.get(),
+                revision_id=self.revision_id
+                
             )
             funcs.LINHAS.clear()
 
@@ -249,6 +295,27 @@ class AppMain(ctk.CTk):
         self.loading_progress.configure(mode="indeterminate")
         self.loading_progress.start()
 
+    def criarTodasAsVigenciasPorAba(self):
+        
+        try:
+            print(f"Gerando tabela para Vigência ID: ")
+            funcs.criartabela(
+                CaminhoPasta=self.path_output.get(),
+                nometabela=self.nome_tabela.get(),
+                tabela_id=self.tabela_id,
+                aba=True,
+                nomeAba=None,
+                keepalive=True,
+                revision_id=None,
+                revisionIds = True
+            )
+        except PermissionError:
+            messagebox.showerror(
+                "Arquivo Aberto",
+                "Feche o arquivo Excel antes de gerar."
+            )
+
+
     def fechar_loading(self):
         try:
             self.loading_progress.stop()
@@ -273,51 +340,54 @@ class AppMain(ctk.CTk):
 
 
     def executarTodasAsFolhas(self, onef=False):
-            KpA = True
-            funcs.LINHAS.clear()
-            print("GERANDO TODAS AS TABELAS")
-            print("----------------------------------")
-            if onef == True:
-                print("Gerando Tabela Sequencial")
-                criar_aba = False
-                nomeTabelaAtual = ""
-                funcs.criartabela(
-                    nomeAba=nomeTabelaAtual,
-                    nometabela=self.nome_tabela.get(),
-                    CaminhoPasta=self.path_output.get(),
-                    tabela_id=self.Tabelasids,
-                    aba=criar_aba,
-                    keepalive=True
-                    )
-                funcs.LINHAS.clear()
-        
-            else:
-             for idx,id in enumerate(self.Tabelasids):
-                criar_aba = True
-                nomeTabelaAtual = self.TabelasNomes[idx]
 
-                try:
-                    print("Gerando Tabela Por Abas")
-                    funcs.criartabela(
-                        nomeAba=nomeTabelaAtual,
-                        nometabela=self.nome_tabela.get(),
-                        CaminhoPasta=self.path_output.get(),
-                        tabela_id=self.Tabelasids,
-                        aba=True,
-                        keepalive=True
-                        )
-                    if onef == False or KpA == True:
-                        funcs.LINHAS.clear()
-                        KpA = False
-                        break
-                except PermissionError:
-                    messagebox.showerror(
-                        "Arquivo Aberto",
-                        "Feche o arquivo Excel antes de gerar."
-                    )
-                    if onef == False:
-                        funcs.LINHAS.clear()
+        if not self.path_output.get():
+            messagebox.showerror("Erro", "Selecione a pasta de saída.")
+            return False
+
+        if not self.nome_tabela.get():
+            messagebox.showerror("Erro", "Digite o nome da tabela.")
+            return False
+
+
+        funcs.LINHAS.clear()
+
+        print("GERANDO TODAS AS TABELAS")
+        print("----------------------------------")
+
+        try:
+            if onef:
+                print("Modo: SEQUENCIAL")
+                funcs.criartabela(
+                    CaminhoPasta=self.path_output.get(),
+                    nometabela=self.nome_tabela.get(),
+                    tabela_id=self.Tabelasids,  # lista
+                    aba=False,
+                    keepalive=True,
+                    revisionIds=False
+                )
+            else:
+                print("Modo: UMA ABA POR TABELA")
+                funcs.criartabela(
+                    CaminhoPasta=self.path_output.get(),
+                    nometabela=self.nome_tabela.get(),
+                    tabela_id=self.Tabelasids,
+                    aba=True,
+                    nomeAba=None,
+                    keepalive=True,
+                    revisionIds=False
+                )
+
+        except PermissionError:
+            messagebox.showerror(
+                "Arquivo Aberto",
+                "Feche o arquivo Excel antes de gerar."
+            )
+        except Exception as e:
+            messagebox.showerror("Erro inesperado", str(e))
+        finally:
             funcs.LINHAS.clear()
+
 
         
 

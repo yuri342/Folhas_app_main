@@ -5,7 +5,9 @@ import json
 import sys
 import pathlib as pl
 import requests
+import certifi
 
+SSL_VERIFY = certifi.where()
 TABELASIDSNOMES = []
 LINHAS = []
 
@@ -81,7 +83,7 @@ def request_tabela_salariais_Nomes(token):
         "Authorization": f"Bearer {token}"
     }
 
-    response = requests.get(url, headers=headers)
+    response = requests.get(url, headers=headers, verify=False)
 
     if response.status_code == 200:
         return response.json()
@@ -129,7 +131,7 @@ def print_tabelas(lista):
         print(f"{item['names']:<40} | {item['ids']}")
 
 
-def request_tabela_salariais_Detalhes(token, tabela_id, keepAlive):
+def request_tabela_salariais_Detalhes(token, tabela_id, keepAlive, wageRevisionId=None):
     url = "https://platform.senior.com.br/t/senior.com.br/bridge/1.0/rest/hcm/remuneration/queries/getWageScale"
 
 
@@ -145,9 +147,10 @@ def request_tabela_salariais_Detalhes(token, tabela_id, keepAlive):
     
     payload = {
         "wageScaleId": tabela_id,
+        "wageRevisionId": wageRevisionId
     }
 
-    response = requests.post(url, headers=headers, json=payload)
+    response = requests.post(url, headers=headers, json=payload, verify=False)
 
     if response.status_code == 200:
         return response.json()
@@ -155,16 +158,92 @@ def request_tabela_salariais_Detalhes(token, tabela_id, keepAlive):
         print(f"Erro na requisição: {response.status_code} - {response.text}")
         return None
 
+def pegarTabelaRevisions(token, tabela_id=None):
+    url = "https://platform.senior.com.br/t/senior.com.br/bridge/1.0/rest/hcm/remuneration/queries/getWageScale"
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "keep-alive": "true"
+    }
+
+    tabelas = []
+
+    payload = {
+        "wageScaleId": tabela_id,
+    }
+
+    response = requests.post(url, headers=headers, json=payload, verify=False)
+
+    if response.status_code != 200:
+        raise Exception(f"Erro na requisição: {response.status_code} - {response.text}")
+
+    data = response.json()
+
+    return data.get("revisions", [])
+
+def pegarTabelaRevisionsG(token, tabela_id=None):
+    revis = pegarTabelaRevisions(token, tabela_id=tabela_id)
+    revision_nomes = [rev.get("startDate") for rev in revis]
+    revision_ids = [rev.get("id") for rev in revis]
+
+    URL_API = (
+        "https://platform.senior.com.br/"
+        "t/senior.com.br/bridge/1.0/rest/"
+        "hcm/remuneration/queries/getWageScale"
+    )
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "keep-alive": "true"
+    }
+
+    tabelas = []
+
+    for tabela_rid in revision_ids:
+        nomeRev = revision_nomes[revision_ids.index(tabela_rid)]
+        payload = {"wageScaleId": tabela_id, "wageRevisionId": tabela_rid}
+        response = requests.post(URL_API, json=payload, headers=headers, verify=False)
+
+        if response.status_code != 200:
+            print(f"Erro no RID {tabela_rid}")
+            continue
+
+        tabela = response.json()
+        linhas = []
+
+        for classe in tabela.get("classes", []):
+            valores = [v.get("value") for v in classe.get("values", [])]
+            nomes = [v.get("name") for v in classe.get("values", [])]
+
+            linhas.append({
+                "fonte": f"{nomeRev} - {tabela.get('name')}",
+                "name": classe.get("name"),
+                "valores": valores,
+                "alfa": nomes
+            })
+
+        tabelas.append(linhas)
+
+    return tabelas
+
+
 #_---------------------------_---------------------------------#
 # função que concatena e substitui e outra que em uma nova aba
 
-
+#FUNÇÃO QUE FAZ VÁRIAS REQUISIÇÕES KEEP-ALIVE
 def obter_dados_multiplos_ids(ids):
-    """
-    Faz UMA request para vários IDs e retorna dados normalizados.
-    """
-    resultados = []
+    import requests
+
     token = extrair_token()
+    URL_API = (
+        "https://platform.senior.com.br/"
+        "t/senior.com.br/bridge/1.0/rest/"
+        "hcm/remuneration/queries/getWageScale"
+    )
 
     headers = {
         "Authorization": f"Bearer {token}",
@@ -172,19 +251,64 @@ def obter_dados_multiplos_ids(ids):
         "Connection": "keep-alive"
     }
 
-    for id in ids:
-        print(id)
-        payload = {
-            "wageScaleId": id  # lista de IDs
-        }
+    FILIAIS_SP = [
+        "5003", "5042", "5046", "5061", "5064", "5070", "5067",
+        "5018", "5041", "5043", "5024", "5028", "5040", "5047",
+        "5048", "50030", "50420"
+    ]
 
-        URL_API = "https://platform.senior.com.br/t/senior.com.br/bridge/1.0/rest/hcm/remuneration/queries/getWageScale"
-        response = requests.post(URL_API, json=payload, headers=headers)
+    tabelas = []
 
-        resultados.append(response.json())
+    for tabela_id in ids:
+        payload = {"wageScaleId": tabela_id}
+        response = requests.post(URL_API, json=payload, headers=headers, verify=False)
 
-    print("Gerado com Sucesso")
-    return resultados
+        if response.status_code != 200:
+            print(f"Erro no ID {tabela_id}")
+            continue
+
+        tabela = response.json()
+
+        is_sp = (
+            tabela.get("name") == "Tabela Salarial SP"
+            or tabela.get("id") == "74070F901FE74A358F8B1740EDF60F06"
+        )
+
+        # ---------- BASE DA TABELA ----------
+        linhas_base = []
+        for classe in tabela.get("classes", []):
+            linhas_base.append({
+                "name": classe.get("name"),
+                "valores": [v.get("value") for v in classe.get("values", [])],
+                "alfa": [v.get("name") for v in classe.get("values", [])]
+            })
+
+        # ---------- FLUXO SP ----------
+        if is_sp:
+            for filial in FILIAIS_SP:
+                linhas = []
+                for linha in linhas_base:
+                    linhas.append({
+                        "fonte": f"Tabela Salarial {filial}",
+                        "name": linha["name"],
+                        "valores": linha["valores"],
+                        "alfa": linha["alfa"]
+                    })
+                tabelas.append(linhas)
+
+        # ---------- FLUXO NORMAL ----------
+        else:
+            linhas = []
+            for linha in linhas_base:
+                linhas.append({
+                    "fonte": tabela.get("name"),
+                    "name": linha["name"],
+                    "valores": linha["valores"],
+                    "alfa": linha["alfa"]
+                })
+            tabelas.append(linhas)
+
+    return tabelas
 
 #FUNÇÂO RECURSIVA PARA ADICIONAR LINHAS
 def adicionar_linha(nivel, valores, letras, font, idx):
@@ -198,40 +322,66 @@ def adicionar_linha(nivel, valores, letras, font, idx):
     LINHAS.append(linha)
 #------------------------------------------#
 
-def criarTabelaNoPadrao(token, tabela_id, keepalive):
-    if keepalive:
-        tabelasjson = obter_dados_multiplos_ids(tabela_id)  # lista de dicts
-    else:
-        tabelasjson = request_tabela_salariais_Detalhes(
-            token, tabela_id, keepAlive=keepalive
-        )
-        tabelasjson = [tabelasjson]  # transforma em lista
 
-    if not tabelasjson:
+def criarTabelaNoPadrao(token, tabela_id, keepalive, revision_id=False):
+    """
+    Popula LINHAS.
+    - keepalive=True  → dados já normalizados
+    - keepalive=False → JSON bruto
+    """
+    # NÃO limpar LINHAS aqui
+    # ===== MODO KEEPALIVE =====
+    if keepalive and revision_id is False:
+        tabelas = obter_dados_multiplos_ids(tabela_id)
+
+        for idx, linhas_tabela in enumerate(tabelas):
+            for linha in linhas_tabela:
+                linha["idx"] = idx
+                LINHAS.append(linha)
+
+        return
+    # ===== MODO KEEPALIVE COM REVISION ID =====
+    if keepalive and revision_id:
+        tabelas = pegarTabelaRevisionsG(token, tabela_id)
+
+
+        for idx, linhas_tabela in enumerate(tabelas):
+            for linha in linhas_tabela:
+                linha["idx"] = idx
+                LINHAS.append(linha)
+
+        return
+
+    # ===== MODO NORMAL =====
+    tabela = request_tabela_salariais_Detalhes(
+        token, tabela_id, keepAlive=False, wageRevisionId=revision_id
+    )
+    if not tabela:
         print("Nenhuma tabela encontrada.")
         return
 
-    for idx, tabela in enumerate(tabelasjson):
-        namejson = tabela.get("name")
-        classes = tabela.get("classes", [])
+    namejson = tabela.get("name")
+    classes = tabela.get("classes", [])
 
-        for linhas in classes:
-            name = linhas.get("name")
-            nomes = []
-            valores = []
+    for linhas in classes:
+        valores = [v.get("value") for v in linhas.get("values", [])]
+        nomes = [v.get("name") for v in linhas.get("values", [])]
 
-            for value in linhas.get("values", []):
-                valores.append(value.get("value"))
-                nomes.append(value.get("name"))
+        adicionar_linha(
+            linhas.get("name"),
+            valores,
+            nomes,
+            namejson,
+            idx=0
+        )
 
-            adicionar_linha(
-                name,
-                valores,
-                nomes,
-                namejson,
-                idx  # índice da tabela
-            )
 
+from collections import defaultdict
+def agrupar_linhas_por_tabela(LINHAS):
+    tabelas = defaultdict(list)
+    for linha in LINHAS:
+        tabelas[linha["idx"]].append(linha)
+    return list(tabelas.values())
 
 
 def obter_workbook(caminho_excel: str):
@@ -244,89 +394,56 @@ def obter_workbook(caminho_excel: str):
         print("📄 Criando novo Excel…")
         return Workbook()
 
-def criartabela(CaminhoPasta, tabela_id, nometabela, aba=False, nomeAba=None, onef=False, keepalive=False):
+def criartabela(
+    CaminhoPasta,
+    tabela_id,
+    nometabela,
+    aba=False,
+    nomeAba=None,
+    onef=False,
+    keepalive=False,
+    revision_id=None,
+    revisionIds = False
+):
+    import os
     from openpyxl.styles import Alignment, Font, Border, Side, PatternFill
-    from openpyxl import Workbook
 
-    colunas = ["Nível", "STEP1", "STEP2", "STEP3", "STEP4", "100%", "STEP6", "STEP7", "STEP8", "STEP9", "FILIAL"]
+
+    colunas = [
+        "Nível", "STEP1", "STEP2", "STEP3", "STEP4",
+        "100%", "STEP6", "STEP7", "STEP8", "STEP9", "FILIAL"
+    ]
+
     token = extrair_token()
 
-    if keepalive == True:
-        criarTabelaNoPadrao(token, tabela_id, True)
-    else:
-        criarTabelaNoPadrao(token, tabela_id, False)
-    #------------------------------------#   
-    # CRIAR ARQUIVO EXCEL
-    #CRIAR ABA
-    caminho_excel = f"{CaminhoPasta}/{nometabela}.xlsx"
+    # ================= BUSCA DE DADOS =================
+    LINHAS.clear()
 
+    if keepalive and not revisionIds:
+        criarTabelaNoPadrao(token, tabela_id, True, revision_id=revisionIds)
+        tabelas = agrupar_linhas_por_tabela(LINHAS)
+    elif keepalive and revisionIds:
+        criarTabelaNoPadrao(token, tabela_id, True, revision_id=revisionIds)
+        tabelas = agrupar_linhas_por_tabela(LINHAS)
+    else:
+        criarTabelaNoPadrao(token, tabela_id, False, revision_id=revision_id)
+        tabelas = [LINHAS]
+
+    caminho_excel = os.path.join(CaminhoPasta, f"{nometabela}.xlsx")
     wb = obter_workbook(caminho_excel)
 
-    # Se for criar nova aba
-    if aba:
-        if keepalive == True:
-            for indx in i
-        if not nomeAba:
-            nomeAba = "ABANOVA"
-        ws = wb.create_sheet(nomeAba)
-    else:
-        ws = wb.active
+    # ================= ESTILOS =================
+    fonteCabecalho = Font(name='Aptos Narrow', size=10, color='FFFFFF')
+    fonteCabecalho2 = Font(name='Aptos Narrow', size=10, bold=True, color='FFFFFF')
+    fontenivel = Font(name="Segoe UI Variable Small", size=7, bold=True, color="FFFFFF")
+    fonteValores = Font(name="Segoe UI Variable Small", size=7, color="000000")
 
+    prenchimento1 = PatternFill("solid", fgColor="E97132")
+    prenchimento2 = PatternFill("solid", fgColor="7030A0")
+    prenchimento3 = PatternFill("solid", fgColor="FEECEC")
 
-    # --- ESTILOS DO CABEÇALHO ---
+    alinharCentro = Alignment(horizontal="center", vertical="center")
 
-    # Fonte (precisa existir no sistema; se não existir, o Excel ignora)
-    fonteCabecalho = Font(
-        name='Aptos Narrow',
-        size=10,
-        bold=False,
-        color='FFFFFF'
-    )
-
-    fonteCabecalho2 = Font(
-        name='Aptos Narrow',
-        size=10,
-        bold=True,
-        color='FFFFFF'
-    )
-
-    fontenivel = Font(
-        name="Segoe UI Variable Small",
-        size=7,
-        bold=True,
-        color="FFFFFF"
-    )
-
-    fonteValores = Font(
-        name="Segoe UI Variable Small",
-        size=7,
-        bold=False,
-        color="000000"
-    )
-
-    #prenchimento
-    prenchimento1 = PatternFill(
-        "solid",
-        fgColor="E97132"
-    )
-
-    prenchimento2 = PatternFill(
-        "solid",
-        fgColor="7030A0"
-    )
-
-    prenchimento3 = PatternFill(
-        "solid",
-        fgColor="FEECEC"
-    )
-
-    # Alinhamento
-    alinharCentro = Alignment(
-        horizontal="center",
-        vertical="center"
-    )
-
-    # Bordas
     bordaFina = Border(
         left=Side(style='thin'),
         right=Side(style='thin'),
@@ -334,60 +451,235 @@ def criartabela(CaminhoPasta, tabela_id, nometabela, aba=False, nomeAba=None, on
         bottom=Side(style='thin')
     )
 
-    # --- APLICAR CABEÇALHO ---
-    for col_idx, nome_col in enumerate(colunas, start=1):
-        cell = ws.cell(row=1, column=col_idx, value=nome_col)
-        if nome_col ==  "100%":
-            cell.font = fonteCabecalho2
-            cell.fill = prenchimento2
+    # ===== LOOP PRINCIPAL DE TABELAS =====
+
+    for idx, LINHAS_TABELA in enumerate(tabelas, start=1):
+        if aba:
+            fonte_tabela = LINHAS_TABELA[0].get("fonte", f"ABA_{idx}")
+            nome = nomeAba if nomeAba else fonte_tabela
+            if nome in wb.sheetnames:
+                nome = f"{nome}_{idx}"
+
+            ws = wb.create_sheet(nome)
+            escrever_cabecalho = True
+            linha_base = 1
         else:
-            cell.font = fonteCabecalho
-            cell.fill = prenchimento1
+            ws = wb.active
 
-        cell.alignment = alinharCentro
-        cell.border = bordaFina
-    
-    #--- APLICAR DADOS ---#
-    #criação da coluna da filial
-    for linhaIdx , linhaValue in enumerate(LINHAS, start=2):
-        ultima_coluna = ws[2][-1].column
-        primeira_vazia = ultima_coluna + 1
-        fonte = linhaValue.get("fonte")
-        numero = fonte.split()[-1]
-        cell = ws.cell(row=linhaIdx, column=ultima_coluna, value=numero)
-        cell.font = fontenivel
-        cell.fill = prenchimento2
-        cell.alignment = alinharCentro
-        cell.border = bordaFina
-
-    #criação dos niveis
-    for linhaIdx , linhaValue in enumerate(LINHAS, start=2):
-        nivel = linhaValue.get("name")
-        cell = ws.cell(row=linhaIdx, column=1, value=nivel )
-        cell.font = fontenivel
-        cell.fill = prenchimento2
-        cell.alignment = alinharCentro
-        cell.border = bordaFina
-    
-    #row = linha
-    #collum = coluna
-    #criaçõo da coluna com os valores - Dinheiro
-    for linhaidx, linhaValue in enumerate(LINHAS, start=2):
-        Valores = linhaValue.get("valores")
-        for valoridx, valor in enumerate(Valores, start=2):
-            cell = ws.cell(row=linhaidx, column=valoridx, value=valor)
-            if valoridx == 6:
-                cell.fill = prenchimento3
+            if ws.max_row <= 1:
+                escrever_cabecalho = True
+                linha_base = 1
             else:
-                cell.fill = PatternFill("solid", fgColor="FFFFFF")
+                escrever_cabecalho = False
+                linha_base = ws.max_row + 1
+
+        # --- CABEÇALHO (APENAS SE NECESSÁRIO) ---
+        if escrever_cabecalho:
+            for col_idx, nome_col in enumerate(colunas, start=1):
+                cell = ws.cell(row=linha_base, column=col_idx, value=nome_col)
+                cell.font = fonteCabecalho2 if nome_col == "100%" else fonteCabecalho
+                cell.fill = prenchimento2 if nome_col == "100%" else prenchimento1
+                cell.alignment = alinharCentro
+                cell.border = bordaFina
+
+        linha_inicio = linha_base + (1 if escrever_cabecalho else 0)
+
+        # --- DADOS ---
+        for i, linha in enumerate(LINHAS_TABELA, start=linha_inicio):
+
+            # NÍVEL
+            cell = ws.cell(row=i, column=1, value=linha["name"])
+            cell.font = fontenivel
+            cell.fill = prenchimento2
             cell.alignment = alinharCentro
-            cell.number_format = 'R$ #,##0.00'
-            cell.font = fonteValores
             cell.border = bordaFina
 
+            # VALORES
+            for j in range(2, len(colunas)):
+                try:
+                    valor = linha["valores"][j - 2]
+                except (IndexError, TypeError):
+                    valor = 0
 
-    caminho = os.path.join(CaminhoPasta, f"{nometabela}.xlsx")
-    wb.save(caminho)
+                if not isinstance(valor, (int, float)):
+                    valor = 0
+
+                cell = ws.cell(row=i, column=j, value=valor)
+                cell.fill = prenchimento3 if j == 6 else PatternFill("solid", fgColor="FFFFFF")
+                cell.number_format = 'R$ #,##0.00'
+                cell.font = fonteValores
+                cell.alignment = alinharCentro
+                cell.border = bordaFina
+
+            # FILIAL (SEMPRE ÚLTIMA COLUNA)
+            col_filial = len(colunas)
+            fonte = linha.get("fonte", "")
+            numero = fonte.split()[-1] if fonte else ""
+
+            cell = ws.cell(row=i, column=col_filial, value=numero)
+            cell.font = fontenivel
+            cell.fill = prenchimento2
+            cell.alignment = alinharCentro
+            cell.border = bordaFina
+
+    wb.save(caminho_excel)
+    LINHAS.clear()
+
+def gerar_tabela_SP_engessada(CaminhoPasta: str, tabela_id):
+    """
+    Regra fixa SP (engessada):
+    - Busca UMA tabela salarial
+    - Repete os mesmos dados
+    - Cria 4 abas (5003, 5041, 5048, 50030)
+    - Nome da aba = filial
+    - Coluna FILIAL = filial
+    """
+
+    import os
+    import requests
+    from openpyxl.styles import Alignment, Font, Border, Side, PatternFill
+
+    FILIAIS_SP =[
+        "5003",
+        "5042",
+        "5046",
+        "5061",
+        "5064",
+        "5070",
+        "5067",
+        "5018",
+        "5041",
+        "5043",
+        "5024",
+        "5028",
+        "5040",
+        "5047",
+        "5048",
+        "50030",
+        "50420"
+    ]
+
+    
+    ARQUIVO = "Tabela Salarial SP.xlsx"
+
+    token = extrair_token()
+    if not token:
+        raise Exception("Token inválido ou não encontrado.")
+
+    # ===== CHAMADA DIRETA À API =====
+    URL_API = (
+        "https://platform.senior.com.br/"
+        "t/senior.com.br/bridge/1.0/rest/"
+        "hcm/remuneration/queries/getWageScale"
+    )
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+    }
+
+    payload = {"wageScaleId": tabela_id}
+    response = requests.post(URL_API, json=payload, headers=headers, verify=False)
+
+    if response.status_code != 200:
+        raise Exception(f"Erro ao buscar tabela: {response.status_code}")
+
+    data = response.json()
+    classes = data.get("classes", [])
+
+    if not classes:
+        raise Exception("Tabela retornou sem classes.")
+
+    # ===== NORMALIZAÇÃO DOS DADOS =====
+    dados = []
+    for classe in classes:
+        dados.append({
+            "nivel": classe.get("name"),
+            "valores": [v.get("value") for v in classe.get("values", [])]
+        })
+
+    # ===== EXCEL =====
+    caminho_excel = os.path.join(CaminhoPasta, ARQUIVO)
+    wb = obter_workbook(caminho_excel)
+
+    colunas = [
+        "Nível", "STEP1", "STEP2", "STEP3", "STEP4",
+        "100%", "STEP6", "STEP7", "STEP8", "STEP9", "FILIAL"
+    ]
+
+    # ===== ESTILOS =====
+    fonteCabecalho = Font(name='Aptos Narrow', size=10, color='FFFFFF')
+    fonteCabecalho2 = Font(name='Aptos Narrow', size=10, bold=True, color='FFFFFF')
+    fontenivel = Font(name="Segoe UI Variable Small", size=7, bold=True, color="FFFFFF")
+    fonteValores = Font(name="Segoe UI Variable Small", size=7, color="000000")
+
+    prenchimento1 = PatternFill("solid", fgColor="E97132")
+    prenchimento2 = PatternFill("solid", fgColor="7030A0")
+    prenchimento3 = PatternFill("solid", fgColor="FEECEC")
+
+    alinharCentro = Alignment(horizontal="center", vertical="center")
+
+    bordaFina = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+
+    # ===== UMA ABA POR FILIAL =====
+    for filial in FILIAIS_SP:
+
+        if filial in wb.sheetnames:
+            del wb[filial]
+
+        ws = wb.create_sheet(filial)
+
+        # CABEÇALHO
+        for col_idx, nome_col in enumerate(colunas, start=1):
+            cell = ws.cell(row=1, column=col_idx, value=nome_col)
+            cell.font = fonteCabecalho2 if nome_col == "100%" else fonteCabecalho
+            cell.fill = prenchimento2 if nome_col == "100%" else prenchimento1
+            cell.alignment = alinharCentro
+            cell.border = bordaFina
+
+        # DADOS
+        for i, linha in enumerate(dados, start=2):
+
+            # NÍVEL
+            cell = ws.cell(row=i, column=1, value=linha["nivel"])
+            cell.font = fontenivel
+            cell.fill = prenchimento2
+            cell.alignment = alinharCentro
+            cell.border = bordaFina
+
+            # VALORES
+            for j in range(2, len(colunas)):
+                valor = linha["valores"][j - 2] if j - 2 < len(linha["valores"]) else 0
+                if not isinstance(valor, (int, float)):
+                    valor = 0
+
+                cell = ws.cell(row=i, column=j, value=valor)
+                cell.fill = prenchimento3 if j == 6 else PatternFill("solid", fgColor="FFFFFF")
+                cell.number_format = 'R$ #,##0.00'
+                cell.font = fonteValores
+                cell.alignment = alinharCentro
+                cell.border = bordaFina
+
+            # FILIAL
+            cell = ws.cell(row=i, column=len(colunas), value=filial)
+            cell.font = fontenivel
+            cell.fill = prenchimento2
+            cell.alignment = alinharCentro
+            cell.border = bordaFina
+
+    wb.save(caminho_excel)
+
+
+
+
+
+
 
 
 
