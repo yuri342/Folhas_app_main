@@ -61,9 +61,11 @@ class DualOutput:
         self.textbox.see("end")
 
 
-# ==========================================================
-#                       APLICATIVO
-# ==========================================================
+# ===========================================================#
+#                       APLICATIVO                           #
+#               Criador - Yuri Bertola de souza              #
+#        Linkedin:https://www.linkedin.com/in/yuri-bertola/  #
+# ===========================================================#
 class AppMain(ctk.CTk):  
     def __init__(self): 
         super().__init__()
@@ -101,11 +103,11 @@ class AppMain(ctk.CTk):
                               font=ctk.CTkFont(size=22, weight="bold"))
         titulo.pack(pady=(10, 0))
 
-        autor = ctk.CTkLabel(self, text="Criado por Yuri Bertola",
+        autor = ctk.CTkLabel(self, text="Criado pelo Time de Remuneração e Reportes",
                              font=ctk.CTkFont(size=12),
                              cursor="hand2")
         autor.pack()
-        autor.bind("<Button-1>", lambda e: webbrowser.open("https://www.linkedin.com/in/yuri-bertola"))
+        autor.bind("<Button-1>", lambda e: webbrowser.open("https://tke.sharepoint.com/sites/global-intranet/_layouts/15/search.aspx?q=Remunera%C3%A7%C3%A3o%20e%20reportes"))
 
         inputs_frame = ctk.CTkFrame(self)
         inputs_frame.pack(fill="x", padx=20, pady=10)
@@ -150,6 +152,10 @@ class AppMain(ctk.CTk):
         linha5 = ctk.CTkFrame(inputs_frame)
         linha5.pack(fill="x", pady=8)
 
+       # Linha 6 Bts Espesificos
+        linha6 = ctk.CTkFrame(inputs_frame)
+        linha6.pack(fill="x", pady=8)
+
         btn1 = ctk.CTkButton(
             linha5,
             text="Gerar Excel 🚀",
@@ -188,13 +194,40 @@ class AppMain(ctk.CTk):
         btn4.pack(side="left", expand=True, fill="x", padx=5)
 
         btn5 = ctk.CTkButton(
-                linha5,
+                linha6,
                 text="Gerar Todas SP 🚀",
                 fg_color="#117CE0",
                 height=40,
                 command=lambda: funcs.gerar_tabela_SP_engessada(CaminhoPasta=self.path_output.get(), tabela_id="74070F901FE74A358F8B1740EDF60F06")
         )
         btn5.pack(side="left", expand=True, fill="x", padx=5)
+
+        btn6 = ctk.CTkButton(
+                linha6,
+                text="Tabelas Norte/Nordeste 🚀",
+                fg_color="#117CE0",
+                height=40,
+                command=lambda: funcs.gerar_tabela_NORTE_NORDESTE(CaminhoPasta=self.path_output.get())
+        )
+        btn6.pack(side="left", expand=True, fill="x", padx=5)
+
+        btn7 = ctk.CTkButton(
+                linha6,
+                text="Tabelas Sul 🚀",
+                fg_color="#117CE0",
+                height=40,
+                command=lambda: funcs.gerar_tabela_SUL(CaminhoPasta=self.path_output.get())
+        )
+        btn7.pack(side="left", expand=True, fill="x", padx=5)
+
+        btn8 = ctk.CTkButton(
+                linha6,
+                text="Tabelas Sudeste 🚀",
+                fg_color="#117CE0",
+                height=40,
+                command=lambda: funcs.gerar_tabela_SUDESTE(CaminhoPasta=self.path_output.get())
+        )
+        btn8.pack(side="left", expand=True, fill="x", padx=5)
 
 
         # Log
