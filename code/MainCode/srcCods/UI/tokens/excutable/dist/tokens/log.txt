@@ -44,3 +44,14 @@
 [2026-01-19T07:56:11.840129] Token renovado com sucesso!
 [2026-01-20T07:55:24.184870] Procurando TOKEN em: C:\Users\BERTOLADESOUZAYURI\OneDrive - TK Elevator\Desktop\Folhas_Pagamento_1.3.1_vf\Folhas Pagamento\src\code\MainCode\srcCods\UI\tokens\excutable\dist\tokens\tokens.json
 [2026-01-20T07:55:24.199354] Token válido por mais 6 dias.
+[2026-01-21T07:56:24.606973] Procurando TOKEN em: C:\Users\BERTOLADESOUZAYURI\OneDrive - TK Elevator\Desktop\Folhas_Pagamento_1.3.1_vf\Folhas Pagamento\src\code\MainCode\srcCods\UI\tokens\excutable\dist\tokens\tokens.json
+[2026-01-21T07:56:24.632098] Token próximo da expiração (dias restantes: 4). Renovando automaticamente...
+[2026-01-21T07:56:25.446803] Token renovado com sucesso!
+[2026-01-22T07:57:03.434797] Procurando TOKEN em: C:\Users\BERTOLADESOUZAYURI\OneDrive - TK Elevator\Desktop\Folhas_Pagamento_1.3.1_vf\Folhas Pagamento\src\code\MainCode\srcCods\UI\tokens\excutable\dist\tokens\tokens.json
+[2026-01-22T07:57:03.456321] Token válido por mais 5 dias.
+[2026-01-27T08:38:05.206055] Procurando TOKEN em: C:\Users\BERTOLADESOUZAYURI\OneDrive - TK Elevator\Desktop\Arquivos App Folhas Pagamento\Folhas_Pagamento_1.3.1_vf\Folhas Pagamento\src\code\MainCode\srcCods\UI\tokens\excutable\dist\tokens\tokens.json
+[2026-01-27T08:38:05.210996] Token próximo da expiração (dias restantes: 0). Renovando automaticamente...
+[2026-01-27T08:38:06.212646] Falha ao renovar token (400): {"message":"Não foi possível gerar novo token. O tenant não corresponde ao refresh token ou o refresh token é inválido.","errorCode":"400","reason":"BAD_REQUEST","domain":"platform","service":"authentication"}
+[2026-01-27T08:38:06.216421] Falha na renovação automática. Abrindo UI para ajuste manual...
+[2026-01-27T08:38:06.218456] Abrindo interface para captura/ajuste de token...
+[2026-01-27T08:42:03.903995] Procurando TOKEN em: C:\Users\BERTOLADESOUZAYURI\OneDrive - TK Elevator\Desktop\Arquivos App Folhas Pagamento\Folhas_Pagamento_1.3.1_vf\Folhas Pagamento\src\code\MainCode\srcCods\UI\tokens\excutable\dist\tokens\tokens.json

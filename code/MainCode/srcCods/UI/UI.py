@@ -378,11 +378,6 @@ class AppMain(ctk.CTk):
             messagebox.showerror("Erro", "Selecione a pasta de saída.")
             return False
 
-        if not self.nome_tabela.get():
-            messagebox.showerror("Erro", "Digite o nome da tabela.")
-            return False
-
-
         funcs.LINHAS.clear()
 
         print("GERANDO TODAS AS TABELAS")

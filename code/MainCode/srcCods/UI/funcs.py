@@ -6,6 +6,12 @@ import sys
 import pathlib as pl
 import requests
 import certifi
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+requests.packages.urllib3.disable_warnings()
+
+# Remova ou comente esta linha:
+# SSL_VERIFY = certifi.where()
 
 # ==========================================================
 #                       APLICATIVO
@@ -45,7 +51,6 @@ FILIAISNORTE_NORDESTEMAIN = FILIAIS_CONFIGS.get("RegraNorte_Nordeste", {})
 FILIAISSPMAIN = FILIAIS_CONFIGS.get("RegraSp", {})
 FILIAIS_SP = FILIAIS_CONFIGS.get("RegraSp", {}).get("filiais", [])
 
-SSL_VERIFY = certifi.where()
 TABELASIDSNOMES = []
 LINHAS = []
 
@@ -418,8 +423,6 @@ def verificarExistencia(filiais):
 
 #FUNÇÃO QUE FAZ VÁRIAS REQUISIÇÕES KEEP-ALIVE
 def obter_dados_multiplos_ids(ids):
-    import requests
-
     token = extrair_token()
     URL_API = (
         "https://platform.senior.com.br/"
@@ -600,6 +603,10 @@ def criartabela(
     if keepalive and not revisionIds:
         criarTabelaNoPadrao(token, tabela_id, True, revision_id=revisionIds, caminho=None)
         tabelas = agrupar_linhas_por_tabela(LINHAS)
+
+        if not nometabela or not nometabela.strip():
+            nometabela = f"Geração de Todas as Tabelas - {datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
+    
     elif keepalive and revisionIds:
         criarTabelaNoPadrao(token, tabela_id, True, revision_id=revisionIds, caminho=CaminhoPasta)
         tabelas = agrupar_linhas_por_tabela(LINHAS)
@@ -608,7 +615,7 @@ def criartabela(
         criarTabelaNoPadrao(token, tabela_id, False, revision_id=revision_id)
         tabelas = [LINHAS]
 
-    caminho_excel = os.path.join(CaminhoPasta, f"{nometabela}.xlsx")
+    caminho_excel = os.path.join(CaminhoPasta, f"{nometabela} - {datetime.now().strftime('%Y-%m-%d')}.xlsx")
     wb = obter_workbook(caminho_excel)
 
 

@@ -1,5 +1,5 @@
-('C:\\Users\\BERTOLADESOUZAYURI\\OneDrive - TK '
- 'Elevator\\Desktop\\Folhas_Pagamento_1.3.1_vf\\Folhas '
+('C:\\Users\\BERTOLADESOUZAYURI\\OneDrive - TK Elevator\\Desktop\\Arquivos App '
+ 'Folhas Pagamento\\Folhas_Pagamento_1.3.1_vf\\Folhas '
  'Pagamento\\src\\code\\MainCode\\srcCods\\UI\\build\\Excel Creator '
  'Tool\\PYZ-00.pyz',
  [('PIL',
@@ -921,8 +921,8 @@
    'C:\\Users\\BERTOLADESOUZAYURI\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\ftplib.py',
    'PYMODULE'),
   ('funcs',
-   'C:\\Users\\BERTOLADESOUZAYURI\\OneDrive - TK '
-   'Elevator\\Desktop\\Folhas_Pagamento_1.3.1_vf\\Folhas '
+   'C:\\Users\\BERTOLADESOUZAYURI\\OneDrive - TK Elevator\\Desktop\\Arquivos '
+   'App Folhas Pagamento\\Folhas_Pagamento_1.3.1_vf\\Folhas '
    'Pagamento\\src\\code\\MainCode\\srcCods\\UI\\funcs.py',
    'PYMODULE'),
   ('getopt',
