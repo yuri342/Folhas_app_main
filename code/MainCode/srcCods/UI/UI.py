@@ -270,10 +270,6 @@ class AppMain(ctk.CTk):
             messagebox.showerror("Erro", "Selecione a pasta de saída.")
             return False
 
-        if not self.nome_tabela.get():
-            messagebox.showerror("Erro", "Digite o nome da tabela.")
-            return False
-
         if self.criar_aba.get() and not self.nome_aba.get():
             messagebox.showerror("Erro", "Digite o nome da aba.")
             return False

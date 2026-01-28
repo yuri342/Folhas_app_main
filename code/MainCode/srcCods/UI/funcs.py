@@ -51,6 +51,11 @@ FILIAISNORTE_NORDESTEMAIN = FILIAIS_CONFIGS.get("RegraNorte_Nordeste", {})
 FILIAISSPMAIN = FILIAIS_CONFIGS.get("RegraSp", {})
 FILIAIS_SP = FILIAIS_CONFIGS.get("RegraSp", {}).get("filiais", [])
 
+#Filiais Tupladas:
+FILIAISTUPLAS = FILIAIS_CONFIGS.get("filiaisTuplas", [])
+
+
+
 TABELASIDSNOMES = []
 LINHAS = []
 
@@ -445,6 +450,10 @@ def obter_dados_multiplos_ids(ids):
 
     IDS_SP = {"74070F901FE74A358F8B1740EDF60F06"}
 
+    IdsTuplas = [item["id"] for item in FILIAISTUPLAS]
+    NomesTuplas = [item["nome"] for item in FILIAISTUPLAS]
+    FiliaisTuplas = [item["valores"] for item in FILIAISTUPLAS]
+
     tabelas = []
 
     for tabela_id in ids:
@@ -478,6 +487,17 @@ def obter_dados_multiplos_ids(ids):
             FILIAISSPMAIN.get("fonte") in nome_tabela.upper()
         )
 
+        eh_tupla = (
+            tabela.get("id") in IdsTuplas or
+            any(nome.upper() in nome_tabela.upper() for nome in NomesTuplas)
+        )
+
+        tupla_atual = next(
+            (t for t in FILIAISTUPLAS if t["id"] == tabela.get("id")),
+            None
+        )
+
+
         if eh_sp:
             # 🔹 SP sempre vira várias tabelas (1 por filial)
             for filial in FILIAIS_SP2:
@@ -490,6 +510,18 @@ def obter_dados_multiplos_ids(ids):
                     aba.append(nova)
 
                 tabelas.append(aba)
+
+        elif eh_tupla and tupla_atual:
+            for filial in tupla_atual["valores"]:   # 5030, 5060
+                aba = []                            # ✅ uma aba por filial
+
+                for linha in linhas_base:
+                    nova = linha.copy()
+                    # nomeLimpo = nome_tabela.replace(f"{filial}", "")
+                    nova["fonte"] = f"Tabela Salarial {filial}"
+                    aba.append(nova)
+
+                tabelas.append(aba)      
         else:
             # 🔹 fluxo padrão
             tabelas.append(linhas_base)
@@ -614,6 +646,8 @@ def criartabela(
     else:
         criarTabelaNoPadrao(token, tabela_id, False, revision_id=revision_id)
         tabelas = [LINHAS]
+
+    if not nometabela or not nometabela.strip(): nometabela = "Tabela - Salárial"
 
     caminho_excel = os.path.join(CaminhoPasta, f"{nometabela} - {datetime.now().strftime('%Y-%m-%d')}.xlsx")
     wb = obter_workbook(caminho_excel)
