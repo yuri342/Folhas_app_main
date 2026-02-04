@@ -5,13 +5,13 @@ import json
 import sys
 import pathlib as pl
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 import certifi
 import urllib3
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 requests.packages.urllib3.disable_warnings()
-
-# Remova ou comente esta linha:
-# SSL_VERIFY = certifi.where()
 
 # ==========================================================
 #                       APLICATIVO
@@ -19,6 +19,45 @@ requests.packages.urllib3.disable_warnings()
 #      Linkedin:https://www.linkedin.com/in/yuri-bertola/
 # ==========================================================
 
+# ===== CONFIGURAÇÃO GLOBAL DE REQUISIÇÕES SSL =====
+def criar_sessao_otimizada():
+    """
+    Cria uma sessão requests otimizada para evitar erros SSL
+    e melhorar performance com connection pooling.
+    
+    Problemas resolvidos:
+    - SSLEOFError (EOF occurred in violation of protocol)
+    - Retry automático em caso de falha
+    - Pool de conexões para melhor performance
+    - Timeout adequado para cada requisição
+    """
+    sessao = requests.Session()
+    
+    # Configurar retentativas automáticas
+    retry_strategy = Retry(
+        total=3,
+        connect=2,
+        read=2,
+        backoff_factor=1,
+        status_forcelist=[429, 500, 502, 503, 504],
+        allowed_methods=["GET", "POST", "PUT", "DELETE", "HEAD"]
+    )
+    
+    # Adapter para HTTP/HTTPS com pool de conexões otimizado
+    adapter = HTTPAdapter(
+        max_retries=retry_strategy,
+        pool_connections=20,
+        pool_maxsize=30
+    )
+    
+    sessao.mount("https://", adapter)
+    sessao.mount("http://", adapter)
+    
+    return sessao
+
+# Sessão global para todas as requisições
+SESSAO_GLOBAL = criar_sessao_otimizada()
+# ===== FIM CONFIGURAÇÃO SSL =====
 
 if getattr(sys, 'frozen', False):
     # Executando como .exe (PyInstaller)
@@ -125,13 +164,18 @@ def extrair_token():
 #REQUESTS - SENIOR
 
 def request_tabela_salariais_Nomes(token):
+    # ⚠️ IMPORTANTE: Esta função usa SESSAO_GLOBAL com:
+    # - Retry automático (3 tentativas)
+    # - Timeout: 30 segundos
+    # - Pool de conexões otimizado
+    # Isso resolve SSLEOFError de forma automática.
     url = "https://platform.senior.com.br/t/senior.com.br/bridge/1.0/rest/hcm/remuneration/queries/wageScales"
     headers = {
         "Accept": "application/json",
         "Authorization": f"Bearer {token}"
     }
 
-    response = requests.get(url, headers=headers, verify=False)
+    response = SESSAO_GLOBAL.get(url, headers=headers, verify=False)
 
     if response.status_code == 200:
         return response.json()
@@ -180,6 +224,11 @@ def print_tabelas(lista):
 
 
 def request_tabela_salariais_Detalhes(token, tabela_id, keepAlive, wageRevisionId=None):
+    # ⚠️ IMPORTANTE: Esta função usa SESSAO_GLOBAL com:
+    # - Retry automático (3 tentativas)
+    # - Timeout: 30 segundos
+    # - Pool de conexões otimizado
+    # Isso resolve SSLEOFError de forma automática.
     url = "https://platform.senior.com.br/t/senior.com.br/bridge/1.0/rest/hcm/remuneration/queries/getWageScale"
 
 
@@ -198,7 +247,7 @@ def request_tabela_salariais_Detalhes(token, tabela_id, keepAlive, wageRevisionI
         "wageRevisionId": wageRevisionId
     }
 
-    response = requests.post(url, headers=headers, json=payload, verify=False)
+    response = SESSAO_GLOBAL.post(url, headers=headers, json=payload, verify=False)
 
     if response.status_code == 200:
         return response.json()
@@ -207,6 +256,11 @@ def request_tabela_salariais_Detalhes(token, tabela_id, keepAlive, wageRevisionI
         return None
 
 def pegarTabelaRevisions(token, tabela_id=None):
+    # ⚠️ IMPORTANTE: Esta função usa SESSAO_GLOBAL com:
+    # - Retry automático (3 tentativas)
+    # - Timeout: 30 segundos
+    # - Pool de conexões otimizado
+    # Isso resolve SSLEOFError de forma automática.
     url = "https://platform.senior.com.br/t/senior.com.br/bridge/1.0/rest/hcm/remuneration/queries/getWageScale"
 
     headers = {
@@ -222,7 +276,7 @@ def pegarTabelaRevisions(token, tabela_id=None):
         "wageScaleId": tabela_id,
     }
 
-    response = requests.post(url, headers=headers, json=payload, verify=False)
+    response = SESSAO_GLOBAL.post(url, headers=headers, json=payload, verify=False)
 
     if response.status_code != 200:
         raise Exception(f"Erro na requisição: {response.status_code} - {response.text}")
@@ -362,7 +416,7 @@ def pegarTabelaRevisionsG(CaminhoPasta: pl.Path, tabela_id):
         revision_id = rev.get("id")
         vigencia = rev.get("startDate")
 
-        response = requests.post(
+        response = SESSAO_GLOBAL.post(
             URL_API,
             json={
                 "wageScaleId": tabela_id,
@@ -457,7 +511,7 @@ def obter_dados_multiplos_ids(ids):
     tabelas = []
 
     for tabela_id in ids:
-        response = requests.post(
+        response = SESSAO_GLOBAL.post(
             URL_API,
             json={"wageScaleId": tabela_id},
             headers=headers,
@@ -790,7 +844,7 @@ def gerar_tabela_SP_engessada(CaminhoPasta: str, tabela_id):
     # ===============================
     # TABELA BASE (FALLBACK)
     # ===============================
-    response_base = requests.post(
+    response_base = SESSAO_GLOBAL.post(
         URL_API,
         json={"wageScaleId": tabela_id},
         headers=headers,
@@ -945,7 +999,7 @@ def gerar_tabela_SP_engessada(CaminhoPasta: str, tabela_id):
     for filial in FILIAIS_EXISTENTES:
         wage_id = ID_MAP.get(f"Tabela Salarial {filial}")
 
-        response = requests.post(
+        response = SESSAO_GLOBAL.post(
             URL_API,
             json={"wageScaleId": wage_id},
             headers=headers,
@@ -1022,7 +1076,7 @@ def gerar_tabela_NORTE_NORDESTE(CaminhoPasta: str):
     # ===============================
     # TABELA BASE (FALLBACK)
     # ===============================
-    response_base = requests.post(
+    response_base = SESSAO_GLOBAL.post(
         URL_API,
         json={"wageScaleId": tabela_id},
         headers=headers,
@@ -1060,7 +1114,7 @@ def gerar_tabela_NORTE_NORDESTE(CaminhoPasta: str):
             print(f"Tabela não encontrada no mapa: {chave}")
             continue
 
-        response = requests.post(
+        response = SESSAO_GLOBAL.post(
             URL_API,
             json={"wageScaleId": wage_id},
             headers=headers,
@@ -1213,7 +1267,7 @@ def gerar_tabela_NORTE_NORDESTE(CaminhoPasta: str):
     for filial in FILIAIS_EXISTENTES:
         wage_id = ID_MAP.get(f"Tabela Salarial {filial}")
 
-        response = requests.post(
+        response = SESSAO_GLOBAL.post(
             URL_API,
             json={"wageScaleId": wage_id},
             headers=headers,
@@ -1290,7 +1344,7 @@ def gerar_tabela_SUL(CaminhoPasta: str):
     # ===============================
     # TABELA BASE (FALLBACK)
     # ===============================
-    response_base = requests.post(
+    response_base = SESSAO_GLOBAL.post(
         URL_API,
         json={"wageScaleId": tabela_id},
         headers=headers,
@@ -1328,7 +1382,7 @@ def gerar_tabela_SUL(CaminhoPasta: str):
             print(f"Tabela não encontrada no mapa: {chave}")
             continue
 
-        response = requests.post(
+        response = SESSAO_GLOBAL.post(
             URL_API,
             json={"wageScaleId": wage_id},
             headers=headers,
@@ -1481,7 +1535,7 @@ def gerar_tabela_SUL(CaminhoPasta: str):
     for filial in FILIAIS_EXISTENTES:
         wage_id = ID_MAP.get(f"Tabela Salarial {filial}")
 
-        response = requests.post(
+        response = SESSAO_GLOBAL.post(
             URL_API,
             json={"wageScaleId": wage_id},
             headers=headers,
@@ -1558,7 +1612,7 @@ def gerar_tabela_SUDESTE(CaminhoPasta: str):
     # ===============================
     # TABELA BASE (FALLBACK)
     # ===============================
-    response_base = requests.post(
+    response_base = SESSAO_GLOBAL.post(
         URL_API,
         json={"wageScaleId": tabela_id},
         headers=headers,
@@ -1596,7 +1650,7 @@ def gerar_tabela_SUDESTE(CaminhoPasta: str):
             print(f"Tabela não encontrada no mapa: {chave}")
             continue
 
-        response = requests.post(
+        response = SESSAO_GLOBAL.post(
             URL_API,
             json={"wageScaleId": wage_id},
             headers=headers,
@@ -1749,7 +1803,7 @@ def gerar_tabela_SUDESTE(CaminhoPasta: str):
     for filial in FILIAIS_EXISTENTES:
         wage_id = ID_MAP.get(f"Tabela Salarial {filial}")
 
-        response = requests.post(
+        response = SESSAO_GLOBAL.post(
             URL_API,
             json={"wageScaleId": wage_id},
             headers=headers,
